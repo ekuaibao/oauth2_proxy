@@ -509,7 +509,7 @@ func (p *ProcessCookieTest) MakeCookie(value string, ref time.Time) *http.Cookie
 }
 
 func (p *ProcessCookieTest) SaveSession(s *providers.SessionState, ref time.Time) error {
-	value, err := p.proxy.provider.CookieForSession(s, p.proxy.CookieCipher)
+	value, err := p.proxy.CookieCipher.Encrypt(s.User)
 	if err != nil {
 		return err
 	}
@@ -798,7 +798,7 @@ func (st *SignatureTest) MakeRequestWithExpectedKey(method, body, key string) {
 
 	state := &providers.SessionState{
 		Email: "mbland@acm.org", AccessToken: "my_access_token"}
-	value, err := proxy.provider.CookieForSession(state, proxy.CookieCipher)
+	value, err := proxy.CookieCipher.Encrypt(state.User)
 	if err != nil {
 		panic(err)
 	}

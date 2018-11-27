@@ -14,8 +14,8 @@ import (
 	"strings"
 	"time"
 
-	"github.com/bitly/oauth2_proxy/cookie"
-	"github.com/bitly/oauth2_proxy/providers"
+	"./cookie"
+	"./providers"
 	"github.com/mbland/hmacauth"
 )
 
@@ -72,6 +72,7 @@ type OAuthProxy struct {
 	compiledRegex       []*regexp.Regexp
 	templates           *template.Template
 	Footer              string
+	Sessions            SessionJar
 }
 
 type UpstreamProxy struct {
@@ -162,13 +163,9 @@ func NewOAuthProxy(opts *Options, validator func(string) bool) *OAuthProxy {
 
 	log.Printf("Cookie settings: name:%s secure(https):%v httponly:%v expiry:%s domain:%s refresh:%s", opts.CookieName, opts.CookieSecure, opts.CookieHttpOnly, opts.CookieExpire, opts.CookieDomain, refresh)
 
-	var cipher *cookie.Cipher
-	if opts.PassAccessToken || (opts.CookieRefresh != time.Duration(0)) {
-		var err error
-		cipher, err = cookie.NewCipher(secretBytes(opts.CookieSecret))
-		if err != nil {
-			log.Fatal("cookie-secret error: ", err)
-		}
+	cipher, err := cookie.NewCipher(secretBytes(opts.CookieSecret))
+	if err != nil {
+		log.Fatal("cookie-secret error: ", err)
 	}
 
 	return &OAuthProxy{
@@ -206,6 +203,8 @@ func NewOAuthProxy(opts *Options, validator func(string) bool) *OAuthProxy {
 		CookieCipher:       cipher,
 		templates:          loadTemplates(opts.CustomTemplatesDir),
 		Footer:             opts.Footer,
+
+		Sessions: NewInMemSessionJar(),
 	}
 }
 
@@ -248,6 +247,7 @@ func (p *OAuthProxy) redeemCode(host, code string) (s *providers.SessionState, e
 	if s.User == "" {
 		s.User, err = p.provider.GetUserName(s)
 		if err != nil && err.Error() == "not implemented" {
+			s.User = s.Email
 			err = nil
 		}
 	}
@@ -299,6 +299,21 @@ func (p *OAuthProxy) SetCSRFCookie(rw http.ResponseWriter, req *http.Request, va
 	http.SetCookie(rw, p.MakeCSRFCookie(req, val, p.CookieExpire, time.Now()))
 }
 
+func (p *OAuthProxy) ClearSession(rw http.ResponseWriter, req *http.Request) {
+	c, err := req.Cookie(p.CookieName)
+	if err != nil {
+		return
+	}
+	val, _, ok := cookie.Validate(c, p.CookieSeed, p.CookieExpire)
+	if ok {
+		user, err := p.CookieCipher.Decrypt(val)
+		if err == nil {
+			p.Sessions.ClearSession(user)
+		}
+	}
+	p.ClearSessionCookie(rw, req)
+}
+
 func (p *OAuthProxy) ClearSessionCookie(rw http.ResponseWriter, req *http.Request) {
 	clr := p.MakeSessionCookie(req, "", time.Hour*-1, time.Now())
 	http.SetCookie(rw, clr)
@@ -327,17 +342,25 @@ func (p *OAuthProxy) LoadCookiedSession(req *http.Request) (*providers.SessionSt
 		return nil, age, errors.New("Cookie Signature not valid")
 	}
 
-	session, err := p.provider.SessionFromCookie(val, p.CookieCipher)
+	user, err := p.CookieCipher.Decrypt(val)
 	if err != nil {
 		return nil, age, err
 	}
-
+	session, err := p.Sessions.LoadSession(user)
+	if err != nil {
+		return nil, age, err
+	}
 	age = time.Now().Truncate(time.Second).Sub(timestamp)
 	return session, age, nil
 }
 
 func (p *OAuthProxy) SaveSession(rw http.ResponseWriter, req *http.Request, s *providers.SessionState) error {
-	value, err := p.provider.CookieForSession(s, p.CookieCipher)
+	user := s.User
+	value, err := p.CookieCipher.Encrypt(user)
+	if err != nil {
+		return err
+	}
+	err = p.Sessions.SaveSession(user, s)
 	if err != nil {
 		return err
 	}
@@ -371,7 +394,7 @@ func (p *OAuthProxy) ErrorPage(rw http.ResponseWriter, code int, title string, m
 }
 
 func (p *OAuthProxy) SignInPage(rw http.ResponseWriter, req *http.Request, code int) {
-	p.ClearSessionCookie(rw, req)
+	p.ClearSession(rw, req)
 	rw.WriteHeader(code)
 
 	redirect_url := req.URL.RequestURI()
@@ -501,7 +524,7 @@ func (p *OAuthProxy) SignIn(rw http.ResponseWriter, req *http.Request) {
 }
 
 func (p *OAuthProxy) SignOut(rw http.ResponseWriter, req *http.Request) {
-	p.ClearSessionCookie(rw, req)
+	p.ClearSession(rw, req)
 	http.Redirect(rw, req, "/", 302)
 }
 
@@ -661,7 +684,7 @@ func (p *OAuthProxy) Authenticate(rw http.ResponseWriter, req *http.Request) int
 	}
 
 	if clearSession {
-		p.ClearSessionCookie(rw, req)
+		p.ClearSession(rw, req)
 	}
 
 	if session == nil {
