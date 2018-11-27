@@ -55,6 +55,7 @@ type Options struct {
 	PassBasicAuth         bool     `flag:"pass-basic-auth" cfg:"pass_basic_auth"`
 	BasicAuthPassword     string   `flag:"basic-auth-password" cfg:"basic_auth_password"`
 	PassAccessToken       bool     `flag:"pass-access-token" cfg:"pass_access_token"`
+	PassBearerToken       bool     `flag:"pass-bearer-token" cfg:"pass_bearer_token"`
 	PassHostHeader        bool     `flag:"pass-host-header" cfg:"pass_host_header"`
 	SkipProviderButton    bool     `flag:"skip-provider-button" cfg:"skip_provider_button"`
 	PassUserHeaders       bool     `flag:"pass-user-headers" cfg:"pass_user_headers"`
@@ -109,6 +110,7 @@ func NewOptions() *Options {
 		PassBasicAuth:        true,
 		PassUserHeaders:      true,
 		PassAccessToken:      false,
+		PassBearerToken:      false,
 		PassHostHeader:       true,
 		ApprovalPrompt:       "force",
 		RequestLogging:       true,

@@ -10,6 +10,7 @@ import (
 )
 
 type SessionState struct {
+	IdToken      string
 	AccessToken  string
 	ExpiresOn    time.Time
 	RefreshToken string

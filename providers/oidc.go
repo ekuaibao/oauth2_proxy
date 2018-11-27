@@ -64,6 +64,7 @@ func (p *OIDCProvider) Redeem(redirectURL, code string) (s *SessionState, err er
 	}
 
 	s = &SessionState{
+		IdToken:      rawIDToken,
 		AccessToken:  token.AccessToken,
 		RefreshToken: token.RefreshToken,
 		ExpiresOn:    token.Expiry,
