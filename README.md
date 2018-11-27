@@ -1,5 +1,11 @@
 THIS IS A FORK OF bitly/oauth2_proxy.
+
 We have to do this because we need OpenID bearer token authentication feature. We use it as a oidc reverse proxy with kubernetes dashboard.
+
+Patches applied:
+
+* Issue #320: Support Authorization Bearer header.
+* Store tokens in server side to reduce cookie size. Otherwise cookie would be too large (> 4k) when working with keycloak.
 
 oauth2_proxy
 =================
