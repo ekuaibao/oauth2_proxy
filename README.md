@@ -1,3 +1,6 @@
+THIS IS A FORK OF bitly/oauth2_proxy.
+We have to do this because we need OpenID bearer token authentication feature. We use it as a oidc reverse proxy with kubernetes dashboard.
+
 oauth2_proxy
 =================
 
