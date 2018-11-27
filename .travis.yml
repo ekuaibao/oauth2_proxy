@@ -1,12 +1,18 @@
+os: linux
 language: go
 go:
-  - 1.8.x
-  - 1.9.x
+- 1.11.x
+before_install:
+- go get -v ./...
 script:
-  - wget -O dep https://github.com/golang/dep/releases/download/v0.3.2/dep-linux-amd64
-  - chmod +x dep
-  - ./dep ensure
-  - ./test.sh
-sudo: false
-notifications:
-  email: false
+- go build -o oauth2_proxy-linux-amd64
+if: tag =~ ^\d+
+deploy:
+  provider: releases
+  api_key:
+    secure: FW6hL33j/EaW4nE7Cn7kHS5Nj2uYHFshSeP5K/HdqjzH9WoaVjEYUIxan5hiaX0HUmf81eT2LXY8GZyurIcK1R5+xJQjHhzzX9wWdlKJLm1Qxa47s0v/TpWNlShqj7DfFeG5kFdT9hn+QP7roDYtX+36LOxLuoYv9EJymxBeQ1Yjeb/G0Q5X0FlZrkN5Yhb8ZRfUx8fMlfD6BcPWGnixAOJvZIKDCX2O/jo32t6PN4Cd0VhjFJTTeWpimPk48AQdyUHZ10yidt1dJTrxPoepEk1jF12/RvNr9twalVlwnny9ziEHf3WeczpaGOZ0hrnw5cJL8Htbs+Zx9PWh+ZAYOyp+hrA/954+7VWltS50YiqKunQYJAKvLbc+n3M+TvsgKRCWxgGJsV85f436v8jvzOcj46cI7A/TquK6ItN/toksxRCQJ0TWrfR18IDMK4Wl4T9XsTrQ6DIORgXEZ/vim2Glfz7VHdSXkC4JiouS99AQR9ZSvYuhItC2CUExtZCzn1LjA12FWmDq1mfY+z26JkxWPG6Zxco0hBXLdt+DuKOPbfLMf4UEt8OPLzXow3NXgRQ68lc9C+ow9OAb5ADKbKPwXQKzT/cDbCy8QuIWnNR9fLWnoGxn7bDpal8I6kiZWZDKniU9MW+aR6tAL9BJzeVTm+wT0FTslEzM0h/NcpI=
+  file: oauth2_proxy-linux-amd64
+  skip_cleanup: true
+  on:
+    repo: ekuaibao/oauth2_proxy
+    tags: true
