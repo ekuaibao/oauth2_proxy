@@ -13,8 +13,8 @@ import (
 	"strings"
 	"time"
 
-	"./providers"
 	"github.com/coreos/go-oidc"
+	"github.com/ekuaibao/oauth2_proxy/providers"
 	"github.com/mbland/hmacauth"
 )
 

@@ -14,8 +14,8 @@ import (
 	"strings"
 	"time"
 
-	"./cookie"
-	"./providers"
+	"github.com/ekuaibao/oauth2_proxy/cookie"
+	"github.com/ekuaibao/oauth2_proxy/providers"
 	"github.com/mbland/hmacauth"
 )
 

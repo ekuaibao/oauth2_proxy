@@ -1,7 +1,7 @@
 package main
 
 import (
-	"./providers"
+	"github.com/ekuaibao/oauth2_proxy/providers"
 )
 
 type SessionJar interface {
